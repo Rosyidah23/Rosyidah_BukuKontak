@@ -12,6 +12,7 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
   final TextEditingController namaController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController noHpController = TextEditingController();
+  bool _isFavorit = false;
 
   @override
   void dispose() {
@@ -28,6 +29,7 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
       nama: namaController.text,
       email: emailController.text,
       noHp: noHpController.text,
+      isFavorit: _isFavorit,
     );
 
     Navigator.pop(context, kontakBaru);
@@ -64,6 +66,16 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
               decoration: const InputDecoration(
                 labelText: 'No Handphone',
               ),
+            ),
+            const SizedBox(height: 16),
+            CheckboxListTile(
+              value: _isFavorit,
+              onChanged: (value) {
+                setState(() => _isFavorit = value ?? false);
+              },
+              title: const Text('Jadikan kontak favorit'),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 20),
             ElevatedButton(
