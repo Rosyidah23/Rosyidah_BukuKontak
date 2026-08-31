@@ -10,7 +10,21 @@ void main() {
       (WidgetTester tester) async {
     await tester.pumpWidget(const BukuKontakApp());
 
-    expect(find.text('Buku Kontak'), findsOneWidget);
+    expect(find.text('BUKU KONTAK'), findsOneWidget);
     expect(find.byIcon(Icons.add), findsOneWidget);
+  });
+
+  testWidgets('Kontak Marisa Arpilya Hapsari hanya tampil di halaman favorit',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const BukuKontakApp());
+
+    expect(find.text('Marisa Arpilya Hapsari'), findsNothing);
+
+    await tester.tap(find.text('Favorit'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Marisa Arpilya Hapsari'), findsOneWidget);
+    expect(find.textContaining('marisaaprilya1@gmail.com'), findsOneWidget);
+    expect(find.textContaining('087826762981'), findsOneWidget);
   });
 }

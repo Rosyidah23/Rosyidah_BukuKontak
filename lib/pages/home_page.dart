@@ -23,12 +23,60 @@ class _HomePageState extends State<HomePage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    final marisa = Contact(
+      nama: 'Marisa Arpilya Hapsari',
+      email: 'marisaaprilya1@gmail.com',
+      noHp: '087826762981',
+      isFavorit: true,
+    );
+
+    _daftarFavorit.add(marisa.copyWith());
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _toggleFavorit(Contact kontak) {
+    final indexKontak = _daftarKontak.indexWhere(
+      (item) =>
+          item.nama == kontak.nama &&
+          item.email == kontak.email &&
+          item.noHp == kontak.noHp,
+    );
+
+    if (indexKontak == -1) return;
+
+    final kontakBaru = _daftarKontak[indexKontak].copyWith(
+      isFavorit: !_daftarKontak[indexKontak].isFavorit,
+    );
+
+    setState(() {
+      _daftarKontak[indexKontak] = kontakBaru;
+
+      if (kontakBaru.isFavorit) {
+        final sudahAda = _daftarFavorit.any(
+          (item) =>
+              item.nama == kontakBaru.nama &&
+              item.email == kontakBaru.email &&
+              item.noHp == kontakBaru.noHp,
+        );
+
+        if (!sudahAda) {
+          _daftarFavorit.add(kontakBaru.copyWith());
+        }
+      } else {
+        _daftarFavorit.removeWhere(
+          (item) =>
+              item.nama == kontakBaru.nama &&
+              item.email == kontakBaru.email &&
+              item.noHp == kontakBaru.noHp,
+        );
+      }
+    });
   }
 
   Future<void> _bukaTambahKontak() async {
@@ -38,7 +86,12 @@ class _HomePageState extends State<HomePage>
     );
 
     if (kontakBaru != null) {
-      setState(() => _daftarKontak.add(kontakBaru));
+      setState(() {
+        _daftarKontak.add(kontakBaru);
+        if (kontakBaru.isFavorit) {
+          _daftarFavorit.add(kontakBaru.copyWith());
+        }
+      });
       _tabController.animateTo(0);
     }
   }
@@ -113,8 +166,14 @@ class _HomePageState extends State<HomePage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          KontakPage(daftarKontak: _daftarKontak),
-          FavoritPage(daftarFavorit: _daftarFavorit),
+          KontakPage(
+            daftarKontak: _daftarKontak,
+            onToggleFavorit: _toggleFavorit,
+          ),
+          FavoritPage(
+            daftarFavorit: _daftarFavorit,
+            onToggleFavorit: _toggleFavorit,
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
