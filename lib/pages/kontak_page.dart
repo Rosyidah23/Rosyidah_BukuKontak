@@ -33,7 +33,7 @@ class KontakPage extends StatelessWidget {
             child: Text(inisial),
           ),
           title: Text(c.nama),
-          subtitle: Text('${c.email}\n${c.noHp}'),
+          subtitle: Text('${c.email}\n${c.noHp}\n${c.kategori ?? 'Tanpa kategori'}'),
           isThreeLine: true,
           trailing: IconButton(
             onPressed: () => onToggleFavorit(c),

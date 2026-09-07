@@ -12,6 +12,7 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
   final TextEditingController namaController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController noHpController = TextEditingController();
+  final TextEditingController kategoriController = TextEditingController();
   bool _isFavorit = false;
 
   @override
@@ -19,17 +20,20 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
     namaController.dispose();
     emailController.dispose();
     noHpController.dispose();
+    kategoriController.dispose();
     super.dispose();
   }
 
   void _simpanKontak() {
     if (namaController.text.trim().isEmpty) return;
 
+    final kategoriText = kategoriController.text.trim();
     final kontakBaru = Contact(
       nama: namaController.text,
       email: emailController.text,
       noHp: noHpController.text,
       isFavorit: _isFavorit,
+      kategori: kategoriText.isEmpty ? null : kategoriText,
     );
 
     Navigator.pop(context, kontakBaru);
@@ -65,6 +69,14 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
                 labelText: 'No Handphone',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: kategoriController,
+              decoration: const InputDecoration(
+                labelText: 'Kategori (opsional)',
+                hintText: 'Keluarga / Teman / Kerja',
               ),
             ),
             const SizedBox(height: 16),
