@@ -27,8 +27,11 @@ class KontakPage extends StatelessWidget {
       itemCount: daftarKontakUmum.length,
       itemBuilder: (context, index) {
         final c = daftarKontakUmum[index];
+        final inisial = c.nama.isNotEmpty ? c.nama[0].toUpperCase() : '?';
         return ListTile(
-          leading: const Icon(Icons.person),
+          leading: CircleAvatar(
+            child: Text(inisial),
+          ),
           title: Text(c.nama),
           subtitle: Text('${c.email}\n${c.noHp}'),
           isThreeLine: true,
