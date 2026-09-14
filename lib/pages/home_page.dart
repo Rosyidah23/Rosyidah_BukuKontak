@@ -79,6 +79,44 @@ class _HomePageState extends State<HomePage>
     });
   }
 
+  void _updateKontak(Contact lama, Contact baru) {
+    final index = _daftarKontak.indexWhere((item) => identical(item, lama));
+    if (index == -1) return;
+
+    setState(() {
+      _daftarKontak[index] = baru;
+
+      final indexFavorit = _daftarFavorit.indexWhere(
+        (item) =>
+            item.nama == lama.nama &&
+            item.email == lama.email &&
+            item.noHp == lama.noHp,
+      );
+
+      if (baru.isFavorit) {
+        if (indexFavorit != -1) {
+          _daftarFavorit[indexFavorit] = baru.copyWith();
+        } else {
+          _daftarFavorit.add(baru.copyWith());
+        }
+      } else if (indexFavorit != -1) {
+        _daftarFavorit.removeAt(indexFavorit);
+      }
+    });
+  }
+
+  void _deleteKontak(Contact kontak) {
+    setState(() {
+      _daftarKontak.removeWhere((item) => identical(item, kontak));
+      _daftarFavorit.removeWhere(
+        (item) =>
+            item.nama == kontak.nama &&
+            item.email == kontak.email &&
+            item.noHp == kontak.noHp,
+      );
+    });
+  }
+
   Future<void> _bukaTambahKontak() async {
     final kontakBaru = await Navigator.push<Contact>(
       context,
@@ -169,6 +207,8 @@ class _HomePageState extends State<HomePage>
           KontakPage(
             daftarKontak: _daftarKontak,
             onToggleFavorit: _toggleFavorit,
+            onUpdateKontak: _updateKontak,
+            onDeleteKontak: _deleteKontak,
           ),
           FavoritPage(
             daftarFavorit: _daftarFavorit,

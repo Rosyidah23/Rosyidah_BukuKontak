@@ -1,15 +1,20 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/contact.dart';
+import 'edit_kontak_page.dart';
 
 class KontakPage extends StatefulWidget {
   final List<Contact> daftarKontak;
   final void Function(Contact) onToggleFavorit;
+  final void Function(Contact lama, Contact baru) onUpdateKontak;
+  final void Function(Contact kontak) onDeleteKontak;
 
   const KontakPage({
     super.key,
     required this.daftarKontak,
     required this.onToggleFavorit,
+    required this.onUpdateKontak,
+    required this.onDeleteKontak,
   });
 
   @override
@@ -17,8 +22,7 @@ class KontakPage extends StatefulWidget {
 }
 
 class _KontakPageState extends State<KontakPage> {
-  final StreamController<String> _searchController =
-      StreamController<String>.broadcast();
+  final StreamController<String> _searchController = StreamController<String>.broadcast();
 
   @override
   void dispose() {
@@ -26,10 +30,44 @@ class _KontakPageState extends State<KontakPage> {
     super.dispose();
   }
 
+  Future<void> _bukaEditKontak(Contact kontakLama) async {
+    final kontakBaru = await Navigator.push<Contact>(
+      context,
+      MaterialPageRoute(builder: (context) => EditKontakPage(kontak: kontakLama)),
+    );
+
+    if (kontakBaru != null) {
+      widget.onUpdateKontak(kontakLama, kontakBaru);
+    }
+  }
+
+  Future<void> _konfirmasiHapus(Contact kontak) async {
+    final konfirmasi = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Kontak'),
+        content: Text('Yakin ingin menghapus kontak "${kontak.nama}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (konfirmasi == true) {
+      widget.onDeleteKontak(kontak);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final daftarKontakUmum =
-        widget.daftarKontak.where((c) => !c.isFavorit).toList();
+    final daftarKontakUmum = widget.daftarKontak.where((c) => !c.isFavorit).toList();
 
     return Column(
       children: [
@@ -52,8 +90,7 @@ class _KontakPageState extends State<KontakPage> {
               final keyword = (snapshot.data ?? '').toLowerCase();
               final hasil = daftarKontakUmum.where((c) {
                 final namaCocok = c.nama.toLowerCase().contains(keyword);
-                final kategoriCocok =
-                    (c.kategori ?? '').toLowerCase().contains(keyword);
+                final kategoriCocok = (c.kategori ?? '').toLowerCase().contains(keyword);
                 return namaCocok || kategoriCocok;
               }).toList();
 
@@ -65,26 +102,35 @@ class _KontakPageState extends State<KontakPage> {
                 itemCount: hasil.length,
                 itemBuilder: (context, index) {
                   final c = hasil[index];
-                  final inisial =
-                      c.nama.isNotEmpty ? c.nama[0].toUpperCase() : '?';
+                  final inisial = c.nama.isNotEmpty ? c.nama[0].toUpperCase() : '?';
+
                   return ListTile(
-                    leading: CircleAvatar(
-                      child: Text(inisial),
-                    ),
+                    leading: CircleAvatar(child: Text(inisial)),
                     title: Text(c.nama),
-                    subtitle: Text(
-                      '${c.email}\n${c.noHp}\n${c.kategori ?? 'Tanpa kategori'}',
-                    ),
+                    subtitle: Text('${c.email}\n${c.noHp}\n${c.kategori ?? 'Tanpa kategori'}'),
                     isThreeLine: true,
-                    trailing: IconButton(
-                      onPressed: () => widget.onToggleFavorit(c),
-                      icon: Icon(
-                        c.isFavorit ? Icons.star : Icons.star_border,
-                        color: c.isFavorit ? Colors.amber : Colors.grey,
-                      ),
-                      tooltip: c.isFavorit
-                          ? 'Hapus dari favorit'
-                          : 'Tambah ke favorit',
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: () => widget.onToggleFavorit(c),
+                          icon: Icon(
+                            c.isFavorit ? Icons.star : Icons.star_border,
+                            color: c.isFavorit ? Colors.amber : Colors.grey,
+                          ),
+                          tooltip: c.isFavorit ? 'Hapus dari favorit' : 'Tambah ke favorit',
+                        ),
+                        IconButton(
+                          onPressed: () => _bukaEditKontak(c),
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          tooltip: 'Edit Kontak',
+                        ),
+                        IconButton(
+                          onPressed: () => _konfirmasiHapus(c),
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          tooltip: 'Hapus Kontak',
+                        ),
+                      ],
                     ),
                   );
                 },
