@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/contact.dart';
 import 'kontak_page.dart';
 import 'favorit_page.dart';
@@ -16,22 +17,10 @@ class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  final List<Contact> _daftarKontak = [];
-  final List<Contact> _daftarFavorit = [];
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-
-    final marisa = Contact(
-      nama: 'Marisa Arpilya Hapsari',
-      email: 'marisaaprilya1@gmail.com',
-      noHp: '087826762981',
-      isFavorit: true,
-    );
-
-    _daftarFavorit.add(marisa.copyWith());
   }
 
   @override
@@ -40,98 +29,12 @@ class _HomePageState extends State<HomePage>
     super.dispose();
   }
 
-  void _toggleFavorit(Contact kontak) {
-    final indexKontak = _daftarKontak.indexWhere(
-      (item) =>
-          item.nama == kontak.nama &&
-          item.email == kontak.email &&
-          item.noHp == kontak.noHp,
-    );
-
-    if (indexKontak == -1) return;
-
-    final kontakBaru = _daftarKontak[indexKontak].copyWith(
-      isFavorit: !_daftarKontak[indexKontak].isFavorit,
-    );
-
-    setState(() {
-      _daftarKontak[indexKontak] = kontakBaru;
-
-      if (kontakBaru.isFavorit) {
-        final sudahAda = _daftarFavorit.any(
-          (item) =>
-              item.nama == kontakBaru.nama &&
-              item.email == kontakBaru.email &&
-              item.noHp == kontakBaru.noHp,
-        );
-
-        if (!sudahAda) {
-          _daftarFavorit.add(kontakBaru.copyWith());
-        }
-      } else {
-        _daftarFavorit.removeWhere(
-          (item) =>
-              item.nama == kontakBaru.nama &&
-              item.email == kontakBaru.email &&
-              item.noHp == kontakBaru.noHp,
-        );
-      }
-    });
-  }
-
-  void _updateKontak(Contact lama, Contact baru) {
-    final index = _daftarKontak.indexWhere((item) => identical(item, lama));
-    if (index == -1) return;
-
-    setState(() {
-      _daftarKontak[index] = baru;
-
-      final indexFavorit = _daftarFavorit.indexWhere(
-        (item) =>
-            item.nama == lama.nama &&
-            item.email == lama.email &&
-            item.noHp == lama.noHp,
-      );
-
-      if (baru.isFavorit) {
-        if (indexFavorit != -1) {
-          _daftarFavorit[indexFavorit] = baru.copyWith();
-        } else {
-          _daftarFavorit.add(baru.copyWith());
-        }
-      } else if (indexFavorit != -1) {
-        _daftarFavorit.removeAt(indexFavorit);
-      }
-    });
-  }
-
-  void _deleteKontak(Contact kontak) {
-    setState(() {
-      _daftarKontak.removeWhere((item) => identical(item, kontak));
-      _daftarFavorit.removeWhere(
-        (item) =>
-            item.nama == kontak.nama &&
-            item.email == kontak.email &&
-            item.noHp == kontak.noHp,
-      );
-    });
-  }
-
   Future<void> _bukaTambahKontak() async {
-    final kontakBaru = await Navigator.push<Contact>(
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const TambahKontakPage()),
     );
-
-    if (kontakBaru != null) {
-      setState(() {
-        _daftarKontak.add(kontakBaru);
-        if (kontakBaru.isFavorit) {
-          _daftarFavorit.add(kontakBaru.copyWith());
-        }
-      });
-      _tabController.animateTo(0);
-    }
+    _tabController.animateTo(0);
   }
 
   void _pindahTab(int index) {
@@ -201,20 +104,33 @@ class _HomePageState extends State<HomePage>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          KontakPage(
-            daftarKontak: _daftarKontak,
-            onToggleFavorit: _toggleFavorit,
-            onUpdateKontak: _updateKontak,
-            onDeleteKontak: _deleteKontak,
-          ),
-          FavoritPage(
-            daftarFavorit: _daftarFavorit,
-            onToggleFavorit: _toggleFavorit,
-          ),
-        ],
+      // Sesuai LKPD: data kontak diambil realtime dari Cloud Firestore
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance.collection('kontak').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Terjadi kesalahan: ${snapshot.error}'));
+          }
+
+          final daftarKontakFirestore = snapshot.data!.docs.map((doc) {
+            final data = doc.data();
+            return Contact.fromFirestore(doc.id, data);
+          }).toList();
+
+          final daftarFavorit =
+              daftarKontakFirestore.where((c) => c.isFavorit).toList();
+
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              KontakPage(daftarKontak: daftarKontakFirestore),
+              FavoritPage(daftarFavorit: daftarFavorit),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _bukaTambahKontak,

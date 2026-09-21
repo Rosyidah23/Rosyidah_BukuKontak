@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/contact.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TambahKontakPage extends StatefulWidget {
   const TambahKontakPage({super.key});
@@ -13,7 +13,7 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
 
   final TextEditingController namaController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController noHpController = TextEditingController();
+  final TextEditingController noHandphoneController = TextEditingController();
   final TextEditingController kategoriController = TextEditingController();
   bool _isFavorit = false;
 
@@ -21,24 +21,49 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
   void dispose() {
     namaController.dispose();
     emailController.dispose();
-    noHpController.dispose();
+    noHandphoneController.dispose();
     kategoriController.dispose();
     super.dispose();
   }
 
-  void _simpanKontak() {
+  // Sesuai LKPD: simpanKontak() langsung menulis ke Cloud Firestore
+  Future<void> simpanKontak() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final kategoriText = kategoriController.text.trim();
-    final kontakBaru = Contact(
-      nama: namaController.text,
-      email: emailController.text,
-      noHp: noHpController.text,
-      isFavorit: _isFavorit,
-      kategori: kategoriText.isEmpty ? null : kategoriText,
-    );
+    try {
+      await FirebaseFirestore.instance.collection('kontak').add({
+        'nama': namaController.text,
+        'email': emailController.text,
+        'noHandphone': noHandphoneController.text,
+        'isFavorit': _isFavorit,
+        'kategori':
+            kategoriController.text.isEmpty ? null : kategoriController.text,
+      });
 
-    Navigator.pop(context, kontakBaru);
+      // Bersihkan form
+      namaController.clear();
+      emailController.clear();
+      noHandphoneController.clear();
+      kategoriController.clear();
+      setState(() => _isFavorit = false);
+
+      if (!mounted) return;
+
+      // Tampilkan SnackBar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data berhasil disimpan'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menyimpan kontak: $e')),
+      );
+    }
   }
 
   @override
@@ -84,7 +109,7 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: noHpController,
+                controller: noHandphoneController,
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
                   labelText: 'No Handphone',
@@ -122,7 +147,7 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _simpanKontak,
+                onPressed: simpanKontak,
                 child: const Text('Simpan'),
               ),
             ],

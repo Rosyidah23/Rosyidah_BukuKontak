@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/contact.dart';
 
 class EditKontakPage extends StatefulWidget {
@@ -15,7 +16,7 @@ class _EditKontakPageState extends State<EditKontakPage> {
 
   late TextEditingController namaController;
   late TextEditingController emailController;
-  late TextEditingController noHpController;
+  late TextEditingController noHandphoneController;
   late TextEditingController kategoriController;
 
   @override
@@ -23,20 +24,24 @@ class _EditKontakPageState extends State<EditKontakPage> {
     super.initState();
     namaController = TextEditingController(text: widget.kontak.nama);
     emailController = TextEditingController(text: widget.kontak.email);
-    noHpController = TextEditingController(text: widget.kontak.noHp);
-    kategoriController = TextEditingController(text: widget.kontak.kategori ?? '');
+    noHandphoneController =
+        TextEditingController(text: widget.kontak.noHandphone);
+    kategoriController =
+        TextEditingController(text: widget.kontak.kategori ?? '');
   }
 
   @override
   void dispose() {
     namaController.dispose();
     emailController.dispose();
-    noHpController.dispose();
+    noHandphoneController.dispose();
     kategoriController.dispose();
     super.dispose();
   }
 
-  void _simpanPerubahan() {
+  // Menyimpan perubahan langsung ke dokumen Firestore yang sudah ada,
+  // pakai id dokumen yang dibawa dari halaman daftar kontak
+  Future<void> _simpanPerubahan() async {
     if (!_formKey.currentState!.validate()) return;
 
     final kategori = kategoriController.text.trim();
@@ -44,11 +49,24 @@ class _EditKontakPageState extends State<EditKontakPage> {
     final kontakBaru = widget.kontak.copyWith(
       nama: namaController.text.trim(),
       email: emailController.text.trim(),
-      noHp: noHpController.text.trim(),
+      noHandphone: noHandphoneController.text.trim(),
       kategori: kategori.isEmpty ? null : kategori,
     );
 
-    Navigator.pop(context, kontakBaru);
+    try {
+      await FirebaseFirestore.instance
+          .collection('kontak')
+          .doc(widget.kontak.id)
+          .update(kontakBaru.toMap());
+
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menyimpan perubahan: $e')),
+      );
+    }
   }
 
   @override
@@ -88,7 +106,7 @@ class _EditKontakPageState extends State<EditKontakPage> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: noHpController,
+                controller: noHandphoneController,
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(labelText: 'No Handphone'),
                 validator: (value) {
