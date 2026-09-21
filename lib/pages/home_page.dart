@@ -104,7 +104,7 @@ class _HomePageState extends State<HomePage>
           ],
         ),
       ),
-      // Sesuai LKPD: data kontak diambil realtime dari Cloud Firestore
+      
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance.collection('kontak').snapshots(),
         builder: (context, snapshot) {

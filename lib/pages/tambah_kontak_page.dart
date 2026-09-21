@@ -26,7 +26,6 @@ class _TambahKontakPageState extends State<TambahKontakPage> {
     super.dispose();
   }
 
-  // Sesuai LKPD: simpanKontak() langsung menulis ke Cloud Firestore
   Future<void> simpanKontak() async {
     if (!_formKey.currentState!.validate()) return;
 
